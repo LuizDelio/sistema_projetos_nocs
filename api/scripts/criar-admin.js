@@ -1,0 +1,8 @@
+require('dotenv').config();
+const mysql=require('mysql2/promise');const bcrypt=require('bcryptjs');
+async function main(){
+ const nome=(process.env.ADMIN_NOME||'').trim(),email=(process.env.ADMIN_EMAIL||'').trim().toLowerCase(),senha=process.env.ADMIN_PASSWORD||'';
+ if(!nome||!email||senha.length<12)throw new Error('Defina ADMIN_NOME, ADMIN_EMAIL e ADMIN_PASSWORD (mínimo de 12 caracteres).');
+ let db;if(process.env.MYSQL_URL)db=await mysql.createConnection(process.env.MYSQL_URL);else{const host=process.env.MYSQLHOST||process.env.MYSQL_HOST,user=process.env.MYSQLUSER||process.env.MYSQL_USER,password=process.env.MYSQLPASSWORD||process.env.MYSQL_PASSWORD,database=process.env.MYSQLDATABASE||process.env.MYSQL_DATABASE,port=Number(process.env.MYSQLPORT||process.env.MYSQL_PORT||3306);if(!host||!user||!database)throw new Error('Configure as variáveis de conexão MySQL.');db=await mysql.createConnection({host,user,password,database,port});}
+ try{let [p]=await db.execute('SELECT id FROM pessoa WHERE nome=?',[nome]);let pessoaId=p[0]?.id;if(!pessoaId){const [r]=await db.execute('INSERT INTO pessoa(nome) VALUES(?)',[nome]);pessoaId=r.insertId;}const hash=await bcrypt.hash(senha,12);await db.execute("INSERT INTO usuario(pessoa_id,email,senha_hash,perfil,ativo) VALUES(?,?,?,'admin',TRUE) ON DUPLICATE KEY UPDATE pessoa_id=VALUES(pessoa_id),senha_hash=VALUES(senha_hash),perfil='admin',ativo=TRUE",[pessoaId,email,hash]);console.log(`Administrador criado/atualizado: ${email}. Remova ADMIN_PASSWORD do ambiente após o uso.`);}finally{await db.end();}}
+main().catch(e=>{console.error(e.message);process.exitCode=1;});
