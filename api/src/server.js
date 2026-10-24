@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { createPool } = require('./db');
 const { requireAuth, requireAdmin } = require('./auth');
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 10) throw new Error('JWT_SECRET precisa ter pelo menos 10 caracteres.');
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) throw new Error('JWT_SECRET precisa ter pelo menos 32 caracteres.');
 const app = express(), db = createPool(), PORT = Number(process.env.PORT || 3000);
 const origins = (process.env.CORS_ORIGIN || '').split(',').map(s=>s.trim()).filter(Boolean);
 app.disable('x-powered-by'); app.use(helmet());
